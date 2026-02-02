@@ -1,0 +1,1 @@
+from .user_delegate import can_impersonate_as

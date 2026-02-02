@@ -1,0 +1,40 @@
+[
+ {
+  "allow_guest": 0,
+  "api_method": "getDelegatesByTeamleadReporsTo",
+  "cron_format": null,
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Server Script",
+  "doctype_event": "Before Insert",
+  "enable_rate_limit": 0,
+  "event_frequency": "All",
+  "modified": "2026-02-02 21:54:25.809024",
+  "module": "Dinext Deputies",
+  "name": "Get delegetable users",
+  "rate_limit_count": 5,
+  "rate_limit_seconds": 86400,
+  "reference_doctype": null,
+  "script": "email = frappe.form_dict.get(\"user\")\r\nif email:\r\n    duser = email\r\nelse:\r\n    duser = frappe.session.user\r\n\r\nlog(f\"Метод getDelegatesByTeamleadReporsTo вызван для пользователя: {duser}\")\r\n\r\n# Проверяем является ли пользователь Администратором или Системным менеджером\r\nsystem_managers = frappe.get_all(\"Has Role\",   \r\n    filters={\"role\": \"System Manager\", \"parenttype\": \"User\"},   \r\n    pluck=\"parent\")  \r\n\r\nall_apprs = []\r\nif duser in system_managers or duser == 'Administrator':\r\n    log(f\"Пользователь {duser} является Администратором/Системным менеджером\")\r\n    all_apprs = frappe.get_all(\"User\", {'enabled': 1}, pluck='name')\r\n    log(f\"Возвращаем всех {len(all_apprs)} активных пользователей\")\r\n    frappe.response[\"message\"] = all_apprs\r\n    pass\r\n\r\nlog(f\"Пользователь {duser} не является Администратором/Системным менеджером\")\r\n\r\n# Получаем делегатов через таблицу тимлидов (оригинальный запрос)\r\nsql_query = \"\"\"\r\n    SELECT DISTINCT ugm.user, ug.name as group_name\r\n    FROM `tabUser Group Member` ugm\r\n    JOIN `tabUser Group` ug ON ug.name = ugm.parent\r\n    WHERE ug.name IN (\r\n        SELECT tl.parent\r\n        FROM `tabTeamleads Table` tl\r\n        WHERE tl.teamlead = %s                    -- Текущий пользователь как тимлид\r\n          AND tl.date <= CURDATE()                -- Дата вступления в силу уже наступила\r\n          AND NOT EXISTS (\r\n              SELECT 1\r\n              FROM `tabTeamleads Table` tl_newer\r\n              WHERE tl_newer.parent = tl.parent   -- Та же группа\r\n                AND tl_newer.date <= CURDATE()    -- Актуальная дата\r\n                AND tl_newer.date > tl.date       -- Более свежее назначение\r\n                -- Не важно кто тимлид, важно что есть более свежая запись!\r\n          )\r\n    )\r\n    AND ugm.user != %s\r\n\"\"\"\r\n\r\n# Выполняем запрос (два параметра как было)\r\ndelegates_with_groups = frappe.db.sql(sql_query, (duser, duser), as_dict=True)\r\n\r\n# Логируем группы где пользователь является тимлидом\r\nteamlead_groups = list(set([delegate['group_name'] for delegate in delegates_with_groups]))\r\nlog(f\"Пользователь {duser} является тимлидом в группах: {teamlead_groups}\")\r\n\r\n# Извлекаем имена пользователей\r\nuser_delegates = [delegate['user'] for delegate in delegates_with_groups if delegate['user']]\r\n\r\n# Добавляем самого тимлида в список делегатов\r\nif duser not in user_delegates:\r\n    user_delegates.append(duser)\r\n    log(f\"Добавили самого тимлида {duser} в список делегатов\")\r\n\r\nlog(f\"Найдено {len(user_delegates)} делегатов для пользователя {duser}\")\r\n\r\nfrappe.response[\"message\"] = user_delegates\r\npass\r\n",
+  "script_type": "API"
+ },
+ {
+  "allow_guest": 0,
+  "api_method": null,
+  "cron_format": null,
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Server Script",
+  "doctype_event": "Before Save",
+  "enable_rate_limit": 0,
+  "event_frequency": "All",
+  "modified": "2026-02-02 21:52:07.346637",
+  "module": "Dinext Deputies",
+  "name": "User_Delegate_Check",
+  "rate_limit_count": 5,
+  "rate_limit_seconds": 86400,
+  "reference_doctype": "User Delegate",
+  "script": "# Получаем роли текущего пользователя\r\ncurrent_user = frappe.session.user\r\nuser_doc = frappe.get_doc(\"User\", current_user)\r\nuser_roles = [r.role for r in user_doc.roles]\r\n\r\nfrappe.log(f\"=== ДЕБАГ ИНФОРМАЦИЯ ===\")\r\nfrappe.log(f\"Текущий пользователь: {current_user}\")\r\nfrappe.log(f\"Роли пользователя: {user_roles}\")\r\nfrappe.log(f\"Delegator в документе: {doc.delegator}\")\r\n\r\n# 1. Проверка для не-тимлидов и не-системных менеджеров\r\nif \"System Manager\" not in user_roles and \"Dinext_Team_Lead\" not in user_roles:\r\n    if doc.delegator != current_user:\r\n        frappe.throw(\"Вы можете назначать делегатов только для себя.\")\r\n\r\n# 2. Проверка для тимлидов (но не системных менеджеров)\r\nif \"Dinext_Team_Lead\" in user_roles and \"System Manager\" not in user_roles:\r\n    duser = current_user\r\n    \r\n    sql_query = \"\"\"\r\n        SELECT DISTINCT ugm.user\r\n        FROM `tabUser Group Member` ugm\r\n        JOIN `tabUser Group` ug ON ug.name = ugm.parent\r\n        WHERE ug.name IN (\r\n            SELECT tl.parent\r\n            FROM `tabTeamleads Table` tl\r\n            WHERE tl.teamlead = %s\r\n              AND tl.date <= CURDATE()\r\n              AND NOT EXISTS (\r\n                  SELECT 1\r\n                  FROM `tabTeamleads Table` tl_newer\r\n                  WHERE tl_newer.parent = tl.parent\r\n                    AND tl_newer.date <= CURDATE()\r\n                    AND tl_newer.date > tl.date\r\n              )\r\n        )\r\n        AND ugm.user != %s\r\n    \"\"\"\r\n    \r\n    delegates_with_groups = frappe.db.sql(sql_query, (duser, duser), as_dict=True)\r\n    user_delegates = [delegate['user'] for delegate in delegates_with_groups if delegate['user']]\r\n    user_delegates.append(duser)  # Добавляем самого тимлида\r\n    \r\n    frappe.log(f\"Результат: {user_delegates}\")\r\n    \r\n    if doc.delegator != current_user and doc.delegator not in user_delegates:\r\n        frappe.throw(\"Вы можете назначать делегатов только для себя или членов вашей команды.\")\r\n\r\n# 3. Проверка что delegator и delegate не совпадают\r\nif doc.delegator and doc.delegate and doc.delegator == doc.delegate:\r\n    frappe.throw(\"Заместитель и замещаемый не могут совпадать.\")\r\n\r\n# 4. Проверка дат\r\nif doc.from_date and doc.to_date:\r\n    from_date = frappe.utils.getdate(doc.from_date)\r\n    to_date = frappe.utils.getdate(doc.to_date)\r\n    \r\n    if to_date < from_date:\r\n        frappe.throw(\"Дата окончания не может быть раньше даты начала.\")\r\n\r\nfrappe.log(\"=== ВАЛИДАЦИЯ ПРОЙДЕНА УСПЕШНО ===\")",
+  "script_type": "DocType Event"
+ }
+]
