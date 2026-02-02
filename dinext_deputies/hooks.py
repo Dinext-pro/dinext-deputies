@@ -5,6 +5,15 @@ app_description = "Managing Deputies"
 app_email = "info@dinext.ru"
 app_license = "mit"
 
+standard_navbar_items = [  
+    {  
+        "item_label": "Мои замещения",  
+        "item_type": "Route",  
+        "route": "/app/user-delegate",  
+        "is_standard": 1
+    }  
+]
+
 fixtures = [
     {
         "doctype": "Server Script",
@@ -18,6 +27,19 @@ fixtures = [
         "filters": [
             ["module", "in", ["Dinext Deputies"]],
             ["enabled", "=", 1]
+        ]
+    },
+    {
+        "doctype": "DocType Permission",
+        "filters": [
+            ["ref_doctype", "in", ["User Delegate"]]
+        ]
+    },
+    {
+        "doctype": "Navbar Item",
+        "filters": [
+            ["module", "in", ["Dinext Deputies"]],
+            ["name", "in", ["User Delegate"]]
         ]
     }
 ]

@@ -1,60 +1,79 @@
 {
-  "doctype": "DocType",
-  "name": "User Delegate",
-  "module": "Dinext Deputies",
-  "custom": 0,
-  "issingle": 0,
-  "is_submittable": 0,
-  "autoname": "autoincrement",
-  "track_changes": 1,
-  "permissions": [
-    {
-      "role": "System Manager",
-      "read": 1,
-      "write": 1,
-      "create": 1,
-      "delete": 1,
-      "submit": 0,
-      "cancel": 0,
-      "amend": 0
-    }
-  ],
-  "fields": [
-    {
-      "fieldname": "delegator",
-      "fieldtype": "Link",
-      "label": "Замещаемый пользователь",
-      "options": "User",
-      "reqd": 1,
-      "in_list_view": 1
-    },
-    {
-      "fieldname": "delegate",
-      "fieldtype": "Link",
-      "label": "Заместитель",
-      "options": "User",
-      "reqd": 1,
-      "in_list_view": 1
-    },
-    {
-      "fieldname": "from_date",
-      "fieldtype": "Date",
-      "label": "С",
-      "reqd": 1,
-      "in_list_view": 1
-    },
-    {
-      "fieldname": "to_date",
-      "fieldtype": "Date",
-      "label": "По",
-      "reqd": 1,
-      "in_list_view": 1
-    }
-  ],
-  "links": [],
-  "actions": [],
-  "automation_rules": [],
-  "naming_rule": "By Autoincrement",
-  "sort_field": "modified",
-  "sort_order": "DESC"
+ "actions": [],
+ "autoname": "autoincrement",
+ "creation": "2026-02-02 23:48:08.043782",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "delegator",
+  "delegate",
+  "from_date",
+  "to_date"
+ ],
+ "fields": [
+  {
+   "fieldname": "delegator",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "\u0417\u0430\u043c\u0435\u0449\u0430\u0435\u043c\u044b\u0439 \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c",
+   "options": "User",
+   "reqd": 1
+  },
+  {
+   "fieldname": "delegate",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "\u0417\u0430\u043c\u0435\u0441\u0442\u0438\u0442\u0435\u043b\u044c",
+   "options": "User",
+   "reqd": 1
+  },
+  {
+   "fieldname": "from_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "\u0421",
+   "reqd": 1
+  },
+  {
+   "fieldname": "to_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "\u041f\u043e",
+   "reqd": 1
+  }
+ ],
+ "links": [],
+ "modified": "2026-02-02 23:53:00.673360",
+ "modified_by": "ikhmel@dinord.ru",
+ "module": "Dinext Deputies",
+ "name": "User Delegate",
+ "naming_rule": "Autoincrement",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "read": 1,
+   "role": "System Manager",
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "if_owner": 1,
+   "read": 1,
+   "role": "Dinext_User",
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "Dinext_Team_Lead",
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
 }

@@ -1,0 +1,39 @@
+[
+ {
+  "amended_from": null,
+  "conditions": [
+   {
+    "parent": "User Delegate_Permissions",
+    "parentfield": "conditions",
+    "parenttype": "DocType Permission",
+    "perm_level": "Full Access",
+    "role": "System Manager",
+    "script": "conditions = \"true\""
+   },
+   {
+    "parent": "User Delegate_Permissions",
+    "parentfield": "conditions",
+    "parenttype": "DocType Permission",
+    "perm_level": "Custom Query",
+    "role": "Dinext_User",
+    "script": "current_user = frappe.session.user\r\n\r\nconditions = f\"\"\" delegator = '{current_user}'\r\n\"\"\""
+   },
+   {
+    "parent": "User Delegate_Permissions",
+    "parentfield": "conditions",
+    "parenttype": "DocType Permission",
+    "perm_level": "Custom Query",
+    "role": "Dinext_Team_Lead",
+    "script": "current_user = frappe.session.user\r\n\r\nconditions = f\"\"\"\r\n`tabUser Delegate`.delegator IN (\r\n    SELECT DISTINCT ugm.user\r\n    FROM `tabUser Group Member` ugm\r\n    JOIN `tabUser Group` ug ON ug.name = ugm.parent\r\n    WHERE ug.name IN (\r\n        SELECT tl.parent\r\n        FROM `tabTeamleads Table` tl\r\n        WHERE tl.teamlead = '{current_user}'\r\n            AND tl.date <= CURDATE()\r\n            AND NOT EXISTS (\r\n                SELECT 1\r\n                FROM `tabTeamleads Table` tl_newer\r\n                WHERE tl_newer.parent = tl.parent\r\n                    AND tl_newer.date <= CURDATE()\r\n                    AND tl_newer.date > tl.date\r\n            )\r\n    )\r\n)\r\n\"\"\""
+   }
+  ],
+  "description": "1) Пользователь с базовой ролью видит только свои\n2) Тимлид видит и может редактировать все UD участников своей функциональной группы\n3) Системный Менеджер может всё",
+  "docstatus": 0,
+  "doctype": "DocType Permission",
+  "modified": "2025-09-10 10:20:31.054723",
+  "name": "User Delegate_Permissions",
+  "ref_doctype": "User Delegate",
+  "testing": 1,
+  "title": "User Delegate_Permissions"
+ }
+]
