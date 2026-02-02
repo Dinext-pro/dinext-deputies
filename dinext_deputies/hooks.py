@@ -5,10 +5,27 @@ app_description = "Managing Deputies"
 app_email = "info@dinext.ru"
 app_license = "mit"
 
+fixtures = [
+    {
+        "doctype": "Server Script",
+        "filters": [
+            ["module", "in", ["Dinext Deputies"]],
+            ["disabled", "=", 0]
+        ]
+    },
+    {
+        "doctype": "Client Script",
+        "filters": [
+            ["module", "in", ["Dinext Deputies"]],
+            ["enabled", "=", 1]
+        ]
+    }
+]
+
 # Apps
 # ------------------
 
-# required_apps = []
+required_apps = ["https://github.com/kittiu/doctype_permission.git"]
 
 # Each item in the list will be shown as an app in the apps page
 # add_to_apps_screen = [
@@ -27,6 +44,7 @@ app_license = "mit"
 # include js, css files in header of desk.html
 # app_include_css = "/assets/dinext_deputies/css/dinext_deputies.css"
 # app_include_js = "/assets/dinext_deputies/js/dinext_deputies.js"
+app_include_js = "/assets/dinext_deputies/js/delegate-impersonate.js"
 
 # include js, css files in header of web template
 # web_include_css = "/assets/dinext_deputies/css/dinext_deputies.css"
@@ -174,6 +192,9 @@ app_license = "mit"
 # Overriding Methods
 # ------------------------------
 #
+override_whitelisted_methods = {
+    "frappe.core.doctype.user.user.impersonate": "dinext_deputies.overrides.user.impersonate_with_delegate"
+}
 # override_whitelisted_methods = {
 # 	"frappe.desk.doctype.event.event.get_events": "dinext_deputies.event.get_events"
 # }
