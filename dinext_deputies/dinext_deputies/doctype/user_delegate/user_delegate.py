@@ -1,7 +1,10 @@
 import frappe
 from frappe import _
 from frappe.utils import today
+from frappe.model.document import Document
 
+class UserDelegate(Document):
+	pass
 
 # Проверяет, может ли текущий пользователь (frappe.session.user)
 # замещать указанного пользователя `user` в текущий день.

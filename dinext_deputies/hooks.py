@@ -5,6 +5,15 @@ app_description = "Managing Deputies"
 app_email = "info@dinext.ru"
 app_license = "mit"
 
+standard_navbar_items = [  
+    {  
+        "item_label": "Мои замещения",  
+        "item_type": "Route",  
+        "route": "/app/user-delegate",  
+        "is_standard": 1
+    }  
+]
+
 fixtures = [
     {
         "doctype": "Server Script",
@@ -19,13 +28,26 @@ fixtures = [
             ["module", "in", ["Dinext Deputies"]],
             ["enabled", "=", 1]
         ]
+    },
+    {
+        "doctype": "DocType Permission",
+        "filters": [
+            ["ref_doctype", "in", ["User Delegate"]]
+        ]
+    },
+    {
+        "doctype": "Navbar Item",
+        "filters": [
+            ["module", "in", ["Dinext Deputies"]],
+            ["name", "in", ["User Delegate"]]
+        ]
     }
 ]
 
 # Apps
 # ------------------
 
-required_apps = ["https://github.com/kittiu/doctype_permission.git"]
+required_apps = ["https://github.com/kittiu/doctype_permission.git", "https://dinord.gitlab.yandexcloud.net/erpnext/dinext/dinext_projects.git"]
 
 # Each item in the list will be shown as an app in the apps page
 # add_to_apps_screen = [
