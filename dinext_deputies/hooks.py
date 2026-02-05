@@ -34,13 +34,6 @@ fixtures = [
         "filters": [
             ["ref_doctype", "in", ["User Delegate"]]
         ]
-    },
-    {
-        "doctype": "Navbar Item",
-        "filters": [
-            ["module", "in", ["Dinext Deputies"]],
-            ["name", "in", ["User Delegate"]]
-        ]
     }
 ]
 
