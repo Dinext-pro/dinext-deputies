@@ -1,6 +1,11 @@
 import frappe
 from frappe import _
+from frappe.model.document import Document
 from frappe.utils import today
+
+
+class UserDelegate(Document):
+	pass
 
 
 # Проверяет, может ли текущий пользователь (frappe.session.user)
