@@ -1,27 +1,34 @@
 import frappe
-from frappe import _
-from frappe.utils import getdate, today
+from frappe.utils import today
 
-#возвращает список активных заместителей сегодня
+
+# возвращает список активных заместителей сегодня
 @frappe.whitelist()
 def get_delegatable_users():
-    user = frappe.session.user
-     # Получить роли текущего пользователя  
-    user_roles = frappe.get_roles()  
-  
-    # Проверить наличие роли  
-    if "System Manager" in user_roles or user == "Administrator":
-        return frappe.get_all("User", filters={"enabled": 1}, fields=["name", "full_name"])
+	user = frappe.session.user
+	user_roles = frappe.get_roles()
 
-    from frappe.utils import today
-    today_date = today()
+	if "System Manager" in user_roles or user == "Administrator":
+		return frappe.get_all(
+			"User",
+			filters={"enabled": 1},
+			fields=["name", "full_name"],
+			order_by="full_name asc",
+		)
 
-    return frappe.db.sql("""
-        SELECT u.name, u.full_name
-        FROM `tabUser` u
-        INNER JOIN `tabUser Delegate` d ON d.delegator = u.name
-        WHERE d.delegate = %s
-          AND d.from_date <= %s
-          AND d.to_date >= %s
-          AND u.enabled = 1
-    """, (user, today_date, today_date), as_dict=True)
+	today_date = today()
+	User = frappe.qb.DocType("User")
+	UserDelegate = frappe.qb.DocType("User Delegate")
+
+	return (
+		frappe.qb.from_(User)
+		.inner_join(UserDelegate)
+		.on(UserDelegate.delegator == User.name)
+		.select(User.name, User.full_name)
+		.where(UserDelegate.delegate == user)
+		.where(UserDelegate.from_date <= today_date)
+		.where(UserDelegate.to_date >= today_date)
+		.where(User.enabled == 1)
+		.orderby(User.full_name)
+		.run(as_dict=True)
+	)

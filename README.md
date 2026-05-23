@@ -1,247 +1,237 @@
 # Dinext Deputies
 
-`Dinext Deputies` - это Frappe-приложение для управления временными замещениями и контролируемого входа от имени другого пользователя.
+## 📖 Overview
 
-Приложение позволяет одному пользователю назначить заместителя на ограниченный период через DocType `User Delegate`. Если замещение активно на текущую дату, заместитель может войти от имени замещаемого пользователя из интерфейса Desk. Поток impersonation проверяется на backend, логируется в `Activity Log` и сопровождается уведомлением для пользователя, от имени которого выполняется вход.
+**Dinext Deputies** — Frappe-приложение для стека ERPNext Dinext. Оно позволяет назначать заместителей пользователей на заданный период и безопасно входить в систему от их имени (impersonate) только при наличии активной записи замещения.
 
-## Назначение приложения
+Приложение интегрируется с `dinext_projects` (функциональные группы и тимлиды) и `doctype_permission` (гибкие права на DocType). Публикуется в GitLab Dinext, устанавливается через bench.
 
-- хранит правила замещения в DocType `User Delegate`
-- ограничивает действие замещения интервалом `from_date` - `to_date`
-- добавляет маршрут `Мои замещения` в стандартный navbar
-- показывает меню `Войти как..` в Desk, если текущий пользователь может impersonate другого пользователя сегодня
-- требует обязательный комментарий перед impersonation
-- логирует факт impersonation и уведомляет замещаемого пользователя
-- расширяет стандартный механизм impersonation во Frappe, а не дублирует его целиком
+## ✨ Features
 
-## Ключевые сценарии
+- **User Delegate** — DocType с полями замещаемый (`delegator`), заместитель (`delegate`), период «С» / «По».
+- **Мои замещения** — пункт navbar, маршрут `/app/user-delegate`.
+- **Войти как..** — меню в navbar: список пользователей, под которых можно войти сегодня; обязательный комментарий при impersonate.
+- **Проверка прав impersonate** — только активный делегат, либо `System Manager` / `Administrator`.
+- **Аудит** — запись в Activity Log и уведомление замещаемому (`Notification Log`).
+- **DocType Permission** — видимость записей для `Dinext_User`, `Dinext_Team_Lead`, `System Manager`.
+- **Server Script** — валидация при сохранении (роли, команда тимлида, даты, запрет совпадения delegator/delegate).
+- **Client Script** — фильтры полей, блокировка `delegator` для обычных пользователей, клиентская валидация дат.
+- **API** — `get_delegatable_users`, `getDelegatesByTeamleadReporsTo`, `can_impersonate_as`.
 
-Приложение реализует два связанных, но разных потока.
-
-### 1. Назначение замещения
-
-DocType `User Delegate` определяет, кто кого замещает и в какие даты:
-
-- `delegator`: замещаемый пользователь
-- `delegate`: заместитель
-- `from_date`: дата начала
-- `to_date`: дата окончания
-
-Клиентская и серверная валидация блокируют типовые ошибки:
-
-- `delegator` и `delegate` не могут совпадать
-- `to_date` не может быть раньше `from_date`
-- обычный пользователь может назначать заместителя только себе
-- тимлид ограничен собой и пользователями из своих функциональных групп
-
-### 2. Вход от имени пользователя
-
-Если замещение активно на текущую дату, заместитель видит в Desk меню `Войти как..`. При выборе пользователя открывается prompt с обязательным комментарием. Дальше приложение:
-
-1. проверяет, разрешен ли impersonation для выбранного пользователя
-2. записывает действие в `Activity Log`
-3. создает запись в `Notification Log` для замещаемого пользователя
-4. запускает стандартный impersonation Frappe через переопределенный backend-метод
-
-## Архитектура
-
-Заметная часть бизнес-логики распределена между Python-кодом, Desk JavaScript и экспортированными fixtures Frappe.
-
-```mermaid
-flowchart LR
-    userDelegate["User Delegate"] --> permissionCheck["can_impersonate_as()"]
-    deskMenu["delegate-impersonate.js"] --> availableUsers["get_delegatable_users()"]
-    availableUsers --> activeDelegations["Active delegation for today"]
-    activeDelegations --> permissionCheck
-    permissionCheck --> impersonateOverride["impersonate_with_delegate()"]
-    impersonateOverride --> activityLog["Activity Log"]
-    impersonateOverride --> notificationLog["Notification Log"]
-```
-
-### Основные компоненты
-
-- `dinext_deputies/hooks.py`
-  Регистрирует fixtures, обязательные приложения, Desk JavaScript, маршрут в navbar и override стандартного метода impersonation во Frappe.
-- `dinext_deputies/api.py`
-  Возвращает список пользователей, от имени которых текущий пользователь может войти сегодня.
-- `dinext_deputies/overrides/user.py`
-  Оборачивает impersonation Frappe проверкой доступа, логированием и созданием уведомления.
-- `dinext_deputies/dinext_deputies/doctype/user_delegate/user_delegate.py`
-  Содержит основную backend-проверку `can_impersonate_as()`.
-- `dinext_deputies/public/js/delegate-impersonate.js`
-  Добавляет глобальное меню `Войти как..` в Desk и заставляет ввести комментарий перед impersonation.
-- `dinext_deputies/fixtures/client_script.json`
-  Содержит фактическое поведение формы `User Delegate`.
-- `dinext_deputies/fixtures/server_script.json`
-  Содержит API и серверную валидацию, связанную с логикой тимлидов и `User Delegate`.
-- `dinext_deputies/fixtures/doctype_permission.json`
-  Хранит scripted rules видимости для `User Delegate`.
-
-## Требования и зависимости
-
-### Требования к окружению
-
-- Python `>=3.10`
-- Bench-окружение с Frappe
-- доступ к DocType `User` и стандартному интерфейсу Frappe Desk
-
-### Обязательные приложения
-
-В `hooks.py` задекларированы такие зависимости:
-
-- `https://github.com/kittiu/doctype_permission.git`
-- `https://dinord.gitlab.yandexcloud.net/erpnext/dinext/dinext_projects.git`
-
-Они должны быть установлены в том же bench до установки `dinext_deputies`.
-
-### Зависимости от данных окружения
-
-Часть логики приложения опирается на уже существующие данные и DocType в целевом окружении:
-
-- `User`
-- `Has Role`
-- `User Group`
-- `User Group Member`
-- `Teamleads Table`
-- `Activity Log`
-- `Notification Log`
-
-Это означает, что приложение не является полностью автономным. Правила доступа для тимлидов зависят от фактического состава групп пользователей и записей о назначении тимлидов в целевом окружении.
-
-## Роли и модель доступа
-
-### `Administrator` и `System Manager`
-
-- могут impersonate любого активного пользователя
-- имеют доступ ко всем записям `User Delegate`
-- не ограничены проверкой активного интервала замещения при impersonation
-
-### `Dinext_User`
-
-- может создавать записи замещения для самого себя
-- видит только свои записи `User Delegate`
-- получает поле `delegator`, зафиксированное на текущем пользователе в форме
-
-### `Dinext_Team_Lead`
-
-- получает расширенный доступ к записям `User Delegate` участников своих функциональных групп
-- список доступных пользователей вычисляется по `User Group`, `User Group Member` и `Teamleads Table`
-- backend-валидация запрещает назначать замещения вне разрешенного командного контура
-
-## Установка
-
-Устанавливайте приложение в уже существующий Administrator.
+## 🚀 Installation
 
 ```bash
-cd /path/to/frappe-bench
+cd $PATH_TO_YOUR_BENCH
 
+# Зависимости (если ещё не установлены)
 bench get-app https://github.com/kittiu/doctype_permission.git
 bench get-app https://dinord.gitlab.yandexcloud.net/erpnext/dinext/dinext_projects.git
-bench get-app <URL_OF_THIS_REPOSITORY> --branch develop
 
-bench --site <site-name> install-app dinext_deputies
+# Приложение
+bench get-app https://dinord.gitlab.yandexcloud.net/dinext/dinext/dinext_deputies.git --branch develop
+bench install-app dinext_deputies
 ```
 
-Если обязательные приложения уже установлены в bench, достаточно получить текущий репозиторий и выполнить `install-app` для нужного сайта.
+После `install-app` подтягиваются fixtures из `dinext_deputies/fixtures/` (Server Script, Client Script, DocType Permission).
 
-## Как использовать
+## 🛠️ Usage
 
-### Создание замещения
+### Назначение замещения
 
-1. Откройте страницу `Мои замещения` или список `User Delegate`.
-2. Создайте новую запись `User Delegate`.
-3. Заполните:
-   - `delegator`
-   - `delegate`
-   - `from_date`
-   - `to_date`
-4. Сохраните документ.
+1. Откройте **Мои замещения** или список **User Delegate**.
+2. Создайте запись: замещаемый, заместитель, даты начала и окончания.
+3. Обычный пользователь (`Dinext_User`) может назначать делегатов только для себя; тимлид — для себя и участников своей группы; `System Manager` — без ограничений по delegator.
 
-Правила валидации, которые применяет приложение:
+### Вход от имени замещаемого
 
-- заместитель не может совпадать с замещаемым пользователем
-- `from_date` не может быть раньше текущей даты на стороне клиента
-- `to_date` должен быть больше или равен `from_date`
+1. В день, попадающий в период записи, у заместителя в navbar появляется **Войти как..**.
+2. Выберите пользователя, укажите комментарий — он отправится замещаемому.
+3. Сессия переключится на выбранного пользователя (страница перезагрузится).
 
-### Вход от имени замещаемого пользователя
+`System Manager` и `Administrator` видят в меню всех активных пользователей.
 
-1. Войдите под пользователем, который указан как `delegate` в активной записи замещения.
-2. Дождитесь появления меню `Войти как..` в Desk.
-3. Выберите пользователя из списка.
-4. Введите обязательный комментарий в prompt.
-5. Подтвердите действие.
+### Права на список User Delegate
 
-После подтверждения приложение фиксирует действие в логах и отправляет уведомление замещаемому пользователю с введенным комментарием.
+| Роль | Область видимости |
+|------|-------------------|
+| `Dinext_User` | Только записи, где `delegator = текущий пользователь` |
+| `Dinext_Team_Lead` | Записи участников своей функциональной группы |
+| `System Manager` | Полный доступ |
 
-## Важные детали реализации
+### Whitelist API (примеры)
 
-### Приложение переопределяет стандартный impersonation Frappe
+```python
+# Список пользователей для impersonate сегодня
+frappe.call("dinext_deputies.api.get_delegatable_users")
 
-Backend-метод `frappe.core.doctype.user.user.impersonate` переопределяется через `hooks.py`. Пользователь по-прежнему входит через стандартную точку входа Frappe, но приложение добавляет собственную авторизацию и аудит.
-
-### Авторизация зависит от текущей даты
-
-Для пользователей без административных прав impersonation разрешен только при наличии активной записи `User Delegate`, где:
-
-- `delegator` - пользователь, от имени которого выполняется вход
-- `delegate` - текущий пользователь сессии
-- текущая дата находится между `from_date` и `to_date`
-
-### Значимая часть логики находится в fixtures
-
-Приложение намеренно опирается на экспортированные fixtures там, где обычно ожидают Python-модули:
-
-- правила формы вынесены в `Client Script`
-- часть серверной валидации вынесена в `Server Script`
-- ограничения видимости вынесены в `DocType Permission`
-
-При отладке и развитии приложения fixtures нужно проверять вместе с Python-кодом.
-
-## Структура репозитория
-
-```text
-dinext_deputies/
-├── dinext_deputies/
-│   ├── api.py
-│   ├── hooks.py
-│   ├── overrides/user.py
-│   ├── public/js/delegate-impersonate.js
-│   ├── fixtures/
-│   └── dinext_deputies/doctype/user_delegate/
-├── pyproject.toml
-└── README.md
+# Проверка права
+frappe.call(
+    "dinext_deputies.dinext_deputies.doctype.user_delegate.user_delegate.can_impersonate_as",
+    user="user@example.com",
+)
 ```
 
-## Разработка
+## 📦 Technologies
 
-### Pre-commit
+| Технология | Использование |
+|------------|---------------|
+| Python 3.10+ | Контроллеры, API, override impersonate |
+| JavaScript | Client Script, `delegate-impersonate.js` |
+| Frappe / ERPNext | DocType, hooks, fixtures, whitelisted methods |
+| JSON | DocType schema, fixtures |
+| flit / pyproject.toml | Сборка пакета |
+| ruff, eslint, prettier | Линтинг и форматирование (pre-commit) |
 
-В проекте используется `pre-commit` для линтинга и форматирования.
+## 🔧 Configuration
+
+Основная конфигурация — в `dinext_deputies/hooks.py`:
+
+| Параметр | Назначение |
+|----------|------------|
+| `required_apps` | `doctype_permission`, `dinext_projects` |
+| `fixtures` | Server Script, Client Script, DocType Permission (модуль Dinext Deputies) |
+| `standard_navbar_items` | Пункт «Мои замещения» → `/app/user-delegate` |
+| `app_include_js` | `/assets/dinext_deputies/js/delegate-impersonate.js` |
+| `override_whitelisted_methods` | `user.impersonate` → `impersonate_with_delegate` |
+
+Версия приложения: `dinext_deputies/__init__.py` (`__version__`).
+
+Миграции: `dinext_deputies/patches.txt` (секции `[pre_model_sync]` / `[post_model_sync]` — пока без патчей).
+
+## ✅ Requirements
+
+- [Administrator](https://github.com/frappe/bench) с установленным Frappe/ERPNext (версия согласно вашему bench).
+- Python >= 3.10 (`pyproject.toml`).
+- Установленные приложения-зависимости: **doctype_permission**, **dinext_projects**.
+- Роли Dinext: `Dinext_User`, `Dinext_Team_Lead` (для сценариев с группами и тимлидами).
+
+## 🤝 Contributing
 
 ```bash
-cd /path/to/frappe-bench/apps/dinext_deputies
+cd apps/dinext_deputies
 pre-commit install
 ```
 
-Используемые инструменты:
+Тесты API (на bench-сайте `dev.dinext.ru` с установленным приложением):
 
-- `ruff`
-- `eslint`
-- `prettier`
-- `pyupgrade`
+```bash
+bench --site dev.dinext.ru run-tests --app dinext_deputies
+```
 
-### Заметки по тестированию
+Перед коммитом срабатывают: ruff, eslint, prettier, pyupgrade (см. `.pre-commit-config.yaml`).
 
-- `test_user_delegate.py` сейчас является заглушкой и не дает полноценного автоматического покрытия
-- перед изменением логики замещения или impersonation нужно вручную проверить сценарий в реальном сайте Frappe
-- если меняются fixtures, нужно проверить и поведение формы, и серверные проверки доступа
+Общие правила разработки Dinext — в sibling-репозитории `dinext-docs`; в этом приложении см. [AGENTS.md](AGENTS.md).
 
-## Ограничения и заметки по сопровождению
+## 📄 Documentation
 
-- поведение тимлидов зависит от внешних бизнес-данных в `User Group`, `User Group Member` и `Teamleads Table`
-- будущие и истекшие замещения не дают прав на impersonation, пока не стали активными на текущую дату
-- контроллер DocType `user_delegate.js` фактически не используется, основная логика формы реализована через fixtures
+| Ресурс | Описание |
+|--------|----------|
+| [AGENTS.md](AGENTS.md) | Навигация агентов: central `dinext-docs`, registry, developer guide |
+| `dinext-docs` | Центральный репозиторий: `agents/ide/skills/readme-writer/`, Frappe developer guide |
+| [Frappe hooks](https://frappeframework.com/docs/user/en/python-api/hooks) | Документация по hooks |
+| [license.txt](license.txt) | Лицензия MIT |
 
-## Лицензия
+### API и переопределения
 
-MIT
+| Метод / точка | Описание |
+|---------------|----------|
+| `dinext_deputies.api.get_delegatable_users` | Пользователи для меню «Войти как..» на текущую дату |
+| `getDelegatesByTeamleadReporsTo` | Server Script API: делегаты для тимлида / все пользователи для админов |
+| `can_impersonate_as` | Проверка права impersonate |
+| `dinext_deputies.overrides.user.impersonate_with_delegate` | Замена стандартного `user.impersonate` |
+
+## ❤️ Acknowledgements
+
+- **Dinext** — издатель и поддержка приложения (`info@dinext.ru`).
+- **[doctype_permission](https://github.com/kittiu/doctype_permission)** — гибкие права на DocType.
+- **[dinext_projects](https://dinord.gitlab.yandexcloud.net/erpnext/dinext/dinext_projects)** — группы пользователей и тимлиды.
+- **Frappe Framework** — платформа ERPNext.
+
+## 📝 Changelog
+
+| Дата | Коммит | Изменения |
+|------|--------|-----------|
+| 2026-05-10 | `96bc203` | Права User Delegate (DocType Permission), обновление hooks и fixtures |
+| 2026-02-02 | `308ee56` | Начальный коммит: DocType User Delegate, impersonate, client/server scripts |
+
+## 🗂️ Repository Structure
+
+```
+dinext_deputies/                    # Корень Frappe-приложения
+├── README.md                       # Документация проекта
+├── AGENTS.md                       # Указатель на central dinext-docs для агентов
+├── license.txt                     # MIT
+├── pyproject.toml                  # Метаданные, ruff, bench dev-dependencies
+├── .pre-commit-config.yaml         # Хуки pre-commit
+├── .editorconfig                   # Стиль редактора
+├── .eslintrc                       # ESLint для JS
+└── dinext_deputies/                # Python-пакет приложения
+    ├── __init__.py                 # __version__
+    ├── hooks.py                    # required_apps, fixtures, navbar, overrides
+    ├── api.py                      # get_delegatable_users
+    ├── modules.txt                 # Модуль «Dinext Deputies»
+    ├── patches.txt                 # Database patches (пусто)
+    ├── config/                     # Зарезервировано под конфиг bench
+    ├── overrides/
+    │   └── user.py                 # impersonate_with_delegate
+    ├── dinext_deputies/
+    │   └── doctype/
+    │       └── user_delegate/      # DocType: schema, can_impersonate_as
+    ├── fixtures/
+    │   ├── server_script.json      # API + Before Save валидация
+    │   ├── client_script.json      # Форма User Delegate
+    │   └── doctype_permission.json # Права по ролям
+    ├── public/js/
+    │   └── delegate-impersonate.js # Меню «Войти как..» в navbar
+    └── templates/                  # ExampleCustomer08 (заготовки Frappe)
+```
+
+| Путь | Назначение |
+|------|------------|
+| `hooks.py` | Точка интеграции с Frappe: зависимости, fixtures, JS, override impersonate |
+| `api.py` | Whitelist: список замещаемых на сегодня для текущего заместителя |
+| `overrides/user.py` | Impersonate с проверкой делегата, логом и уведомлением |
+| `doctype/user_delegate/` | Модель замещения и `can_impersonate_as` |
+| `fixtures/` | Переносимые Server/Client Script и DocType Permission |
+| `public/js/delegate-impersonate.js` | UI: группа кнопок и вызов impersonate |
+
+## 🔗 Flow Chart
+
+### Назначение замещения (User Delegate)
+
+```mermaid
+flowchart TD
+    A[Пользователь открывает User Delegate] --> B[Client Script: onload/refresh]
+    B --> C{Роль?}
+    C -->|Dinext_User| D[delegator = session.user, read_only]
+    C -->|Team Lead / System Manager| E[delegator выбирается из getDelegatesByTeamleadReporsTo]
+    D --> F[Сохранение формы]
+    E --> F
+    F --> G[Server Script User_Delegate_Check]
+    G --> H{Валидация OK?}
+    H -->|Да| I[Запись в БД]
+    H -->|Нет| J[frappe.throw]
+```
+
+### Impersonate (вход как замещаемый)
+
+```mermaid
+sequenceDiagram
+    participant UI as delegate-impersonate.js
+    participant API as get_delegatable_users
+    participant Imp as impersonate_with_delegate
+    participant UD as User Delegate / can_impersonate_as
+    participant Log as Activity Log + Notification
+
+    UI->>API: app_ready → список пользователей
+    API-->>UI: delegators на сегодня
+    UI->>Imp: POST user + reason
+    Imp->>UD: can_impersonate_as?
+    alt разрешено
+        Imp->>Log: запись + уведомление delegator
+        Imp->>Imp: login_manager.impersonate
+        UI->>UI: location.reload()
+    else запрещено
+        Imp-->>UI: PermissionError
+    end
+```
