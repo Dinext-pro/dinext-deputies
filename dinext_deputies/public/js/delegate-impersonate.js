@@ -25,6 +25,7 @@ const add_delegation_menu = () => {
             if ( users.length ) {
                 let group = current_page.add_custom_button_group(__("Войти как.."), "users", $(".navbar-collapse form"));
                 group.parent().addClass('delegation-menu');
+                group.parent().find(".visible-xs").removeClass("visible-xs").addClass("d-md-none");
                 group.parent().css("position","relative");
 
                 users.forEach(user => {

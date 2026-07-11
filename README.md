@@ -25,10 +25,10 @@ cd $PATH_TO_YOUR_BENCH
 
 # Зависимости (если ещё не установлены)
 bench get-app https://github.com/kittiu/doctype_permission.git
-bench get-app https://dinord.gitlab.yandexcloud.net/erpnext/dinext/dinext_projects.git
+bench get-app https://dinext.gitlab.yandexcloud.net/erpnext/dinext/dinext-projects.git
 
 # Приложение
-bench get-app https://dinord.gitlab.yandexcloud.net/dinext/dinext/dinext_deputies.git --branch develop
+bench get-app https://dinext.gitlab.yandexcloud.net/erpnext/dinext/dinext-deputies.git --branch develop
 bench install-app dinext_deputies
 ```
 
@@ -144,7 +144,7 @@ bench --site dev.dinext.ru run-tests --app dinext_deputies
 
 - **Dinext** — издатель и поддержка приложения (`info@dinext.ru`).
 - **[doctype_permission](https://github.com/kittiu/doctype_permission)** — гибкие права на DocType.
-- **[dinext_projects](https://dinord.gitlab.yandexcloud.net/erpnext/dinext/dinext_projects)** — группы пользователей и тимлиды.
+- **[dinext_projects](https://dinext.gitlab.yandexcloud.net/erpnext/dinext/dinext-projects)** — группы пользователей и тимлиды.
 - **Frappe Framework** — платформа ERPNext.
 
 ## 📝 Changelog
