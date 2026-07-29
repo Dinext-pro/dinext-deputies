@@ -23,7 +23,7 @@ const add_delegation_menu = () => {
             const users = r.message || [];
 
             if ( users.length ) {
-                let group = current_page.add_custom_button_group(__("Войти как.."), "users", $(".navbar-collapse form"));
+                let group = current_page.add_custom_button_group(__("Login as.."), "users", $(".navbar-collapse form"));
                 group.parent().addClass('delegation-menu');
                 group.parent().find(".visible-xs").removeClass("visible-xs").addClass("d-md-none");
                 group.parent().css("position","relative");
@@ -33,9 +33,9 @@ const add_delegation_menu = () => {
                         frappe.prompt({
                             fieldname: "reason",
                             fieldtype: "Small Text",
-                            label: __("Комментарий"),
+                            label: __("Comment"),
                             reqd: 1,
-                            description: __("Будет отправлено уведомление пользователю")
+                            description: __("A notification will be sent to the user")
                         }, (values) => {
                             frappe.call({
                                 method: "frappe.core.doctype.user.user.impersonate",
