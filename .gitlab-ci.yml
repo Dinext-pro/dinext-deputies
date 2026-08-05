@@ -6,4 +6,4 @@ include:
     file: /ci/dinext-app.yml
 
 variables:
-  DINEXT_CONTROL_CENTER_REF: "main"
+  DINEXT_CONTROL_CENTER_REF: "ci-fix-smoke-frappe-ping"
