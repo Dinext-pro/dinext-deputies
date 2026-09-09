@@ -2,6 +2,7 @@
 "A notification will be sent to the user","Будет отправлено уведомление пользователю",""
 "Comment","Комментарий",""
 "Login as..","Войти как..",""
+"User Delegate","Замещение пользователя",""
 "User {0} impersonated as {1}","Пользователь {0} вошёл как {1}",""
 "You are not allowed to impersonate as {0}","Вам не разрешено входить от имени {0}",""
 "{0} just impersonated as you. Reason: {1}","{0} только что вошёл от вашего имени. Причина: {1}",""
