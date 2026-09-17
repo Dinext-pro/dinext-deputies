@@ -42,7 +42,7 @@ const add_delegation_menu = () => {
                                 args: { user: user.name, reason: values.reason },
                                 callback: () => location.reload()
                             });
-                        }, `Войти как ${user.full_name}`, "Продолжить");
+                        }, __("Login as {0}", [user.full_name]), __("Continue"));
                     }, true);
                 });
             }
