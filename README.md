@@ -129,7 +129,7 @@ bench --site dev.dinext.ru run-tests --app dinext_deputies
 | [AGENTS.md](AGENTS.md) | Навигация агентов: central `dinext-docs`, registry, developer guide |
 | `dinext-docs` | Центральный репозиторий: `agents/ide/skills/readme-writer/`, Frappe developer guide |
 | [Frappe hooks](https://frappeframework.com/docs/user/en/python-api/hooks) | Документация по hooks |
-| [license.txt](license.txt) | Лицензия MIT |
+| [license.txt](license.txt) | Лицензия GPL-3 |
 
 ### API и переопределения
 
@@ -160,7 +160,7 @@ bench --site dev.dinext.ru run-tests --app dinext_deputies
 dinext_deputies/                    # Корень Frappe-приложения
 ├── README.md                       # Документация проекта
 ├── AGENTS.md                       # Указатель на central dinext-docs для агентов
-├── license.txt                     # MIT
+├── license.txt                     # GPL-3
 ├── pyproject.toml                  # Метаданные, ruff, bench dev-dependencies
 ├── .pre-commit-config.yaml         # Хуки pre-commit
 ├── .editorconfig                   # Стиль редактора
