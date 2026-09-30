@@ -3,7 +3,7 @@ app_title = "Dinext Deputies"
 app_publisher = "Dinext"
 app_description = "Managing Deputies"
 app_email = "info@dinext.ru"
-app_license = "mit"
+app_license = "GNU General Public License (v3)"
 
 standard_navbar_items = [  
     {  
@@ -19,14 +19,12 @@ fixtures = [
         "doctype": "Server Script",
         "filters": [
             ["module", "in", ["Dinext Deputies"]],
-            ["disabled", "=", 0]
         ]
     },
     {
         "doctype": "Client Script",
         "filters": [
             ["module", "in", ["Dinext Deputies"]],
-            ["enabled", "=", 1]
         ]
     },
     {
