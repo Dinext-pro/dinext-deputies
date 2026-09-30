@@ -19,14 +19,12 @@ fixtures = [
         "doctype": "Server Script",
         "filters": [
             ["module", "in", ["Dinext Deputies"]],
-            ["disabled", "=", 0]
         ]
     },
     {
         "doctype": "Client Script",
         "filters": [
             ["module", "in", ["Dinext Deputies"]],
-            ["enabled", "=", 1]
         ]
     },
     {
