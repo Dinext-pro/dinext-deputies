@@ -1,5 +1,25 @@
 [Русский](README.ru.md)
 
+<!-- dinext-presentation:start -->
+<p align="center">
+  <a href="https://dinext.ru"><img src="docs/assets/readme/dinext-logo.png" alt="Dinext" width="128"></a>
+</p>
+<h1 align="center">Dinext Deputies</h1>
+
+<hr>
+
+<p align="center">Time-limited user delegation with controlled sign-in on behalf of a colleague and an audit trail.</p>
+
+<p align="center">
+  <img src="docs/assets/readme/overview.png" alt="A delegation period configured with demonstration accounts." width="960">
+</p>
+<p align="center"><sub>A delegation period configured with demonstration accounts.</sub></p>
+
+<p align="center">
+  <a href="https://dinext.ru">Website</a> · <a href="https://docs.dinext.ru">Documentation</a>
+</p>
+<!-- dinext-presentation:end -->
+
 # Dinext Deputies
 
 ## 📖 Overview
