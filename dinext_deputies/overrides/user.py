@@ -6,6 +6,7 @@ from dinext_deputies.dinext_deputies.doctype.user_delegate import can_impersonat
 @frappe.whitelist(methods=["POST"])
 def impersonate_with_delegate(user: str, reason: str):
     current_user = frappe.session.user
+    original_user = (frappe.session.data or {}).get("impersonated_by")
 
     # проверяем права
     if not can_impersonate_as(user):
@@ -32,3 +33,5 @@ def impersonate_with_delegate(user: str, reason: str):
     notification.insert(ignore_permissions=True)
 
     frappe.local.login_manager.impersonate(user)
+    if original_user:
+        frappe.local.session_obj.set_impersonated(original_user)
